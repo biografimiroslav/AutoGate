@@ -3,99 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gate Control</title>
+    <title>Контролер Ворота | Firebase IoT</title>
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            min-height: 100vh;
             margin: 0;
-            background: #121212;
-            color: white;
+            background-color: #f4f7f6;
         }
-        .card {
-            background: #1e1e1e;
-            padding: 2rem;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
             text-align: center;
-            width: 300px;
+            width: 90%;
+            max-width: 400px;
         }
-        h2 { margin-bottom: 1.5rem; color: #00e676; }
-        .btn {
-            background: #00e676;
-            border: none;
-            color: #121212;
-            padding: 1.2rem 2rem;
-            font-size: 1.2rem;
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+        .status-box {
+            background-color: #ecf0f1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .status-text {
+            font-size: 1.2em;
             font-weight: bold;
-            border-radius: 50px;
+            color: #7f8c8d;
+        }
+        #currentStatus {
+            color: #3498db;
+            margin-top: 5px;
+            display: block;
+        }
+        .btn {
+            background-color: #2ecc71;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            border-radius: 6px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: background-color 0.3s, transform 0.1s;
             width: 100%;
-            box-shadow: 0 4px 15px rgba(0, 230, 118, 0.3);
+            box-sizing: border-box;
+        }
+        .btn:hover {
+            background-color: #27ae60;
         }
         .btn:active {
-            transform: scale(0.95);
-            background: #00c853;
+            transform: scale(0.98);
         }
-        .status {
-            margin-top: 1.5rem;
-            font-size: 0.9rem;
-            color: #888;
+        #message {
+            margin-top: 15px;
+            color: #e74c3c;
+            font-size: 0.9em;
         }
     </style>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 </head>
 <body>
+    <div class="container">
+        <h1>Керування Воротами</h1>
+        
+    
 
-<div class="card">
-    <h2>Керування воротами</h2>
-    <button class="btn" onclick="openGate()">ВІДКРИТИ</button>
-    <div id="status" class="status">Готово до роботи</div>
-</div>
+        <button class="btn" onclick="sendGateCommand()">
+            ВІДПРАВИТИ СИГНАЛ (1)
+        </button>
 
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        <p id="message"></p>
+    </div>
 
-    // Твій конфіг, який ти скидав
-    const firebaseConfig = {
-        apiKey: "AIzaSyChuHidmNhMzksBqrjKciYS8hzbSej1zqU",
-        authDomain: "autogate-2fd5a.firebaseapp.com",
-        projectId: "autogate-2fd5a",
-        databaseURL: "https://autogate-2fd5a-default-rtdb.firebaseio.com",
-        storageBucket: "autogate-2fd5a.firebasestorage.app",
-        messagingSenderId: "1092222084376",
-        appId: "1:1092222084376:web:281a186ed9257ef976aa6d"
-    };
+    <script>
 
-    // Ініціалізація
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
+        const firebaseConfig = {
+            apiKey: "AIzaSyBMralpoqNUxJhZFNiKmWfkgORfnd8xtoc",
+            authDomain: "gateopenerman.firebaseapp.com",
+            databaseURL: "https://gateopenerman-default-rtdb.firebaseio.com",
+            projectId: "gateopenerman",
+            storageBucket: "gateopenerman.firebasestorage.app",
+            messagingSenderId: "499804971560",
+            appId: "1:499804971560:web:d0429bf25a97aaea228b1d",
+            measurementId: "G-JZHTEHBXT8"
+        };
+        
+        const FIREBASE_NODE_PATH = "/gate_control";
+        
 
-    // Функція для відправки "1"
-    window.openGate = function() {
-        const statusDiv = document.getElementById('status');
-        statusDiv.innerText = "Відправка команди...";
-        statusDiv.style.color = "#00e676";
+        let db;
 
-        // Записуємо 1 в gate_control
-        set(ref(db, 'gate_control'), "1")
-        .then(() => {
-            statusDiv.innerText = "Команду надіслано!";
-            setTimeout(() => {
-                statusDiv.innerText = "Готово до роботи";
-                statusDiv.style.color = "#888";
-            }, 2000);
-        })
-        .catch((error) => {
-            statusDiv.innerText = "Помилка: " + error.message;
-            statusDiv.style.color = "#ff5252";
-        });
-    }
-</script>
+        try {
+            const app = firebase.initializeApp(firebaseConfig);
+            db = app.database();
+            console.log("Firebase успішно ініціалізовано.");
+            setupStatusListener();
+        } catch (error) {
+            console.error("Помилка ініціалізації Firebase:", error);
+            document.getElementById('message').textContent = 'Помилка підключення до Firebase.';
+        }
 
+        function sendGateCommand() {
+            if (!db) return;
+
+            const gateRef = db.ref(FIREBASE_NODE_PATH);
+            const commandValue = 1; 
+
+            gateRef.set(commandValue)
+                .then(() => {
+                    const msgElement = document.getElementById('message');
+                    msgElement.textContent = `Команда ${commandValue} успішно відправлена.`;
+                    msgElement.style.color = '#2ecc71';
+                    setTimeout(() => {
+                        gateRef.set(0); 
+                        msgElement.textContent = `Значення скинуто на 0.`;
+                        msgElement.style.color = '#7f8c8d';
+                    }, 2500); // Скидаємо через 1.5 секунди
+                })
+                .catch((error) => {
+                    console.error("Помилка запису в Firebase:", error);
+                    const msgElement = document.getElementById('message');
+                    msgElement.textContent = `Помилка: ${error.message}`;
+                    msgElement.style.color = '#e74c3c';
+                });
+        }
+        
+
+        function setupStatusListener() {
+            if (!db) return;
+
+            const gateRef = db.ref(FIREBASE_NODE_PATH);
+            const statusElement = document.getElementById('currentStatus');
+
+
+            gateRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                statusElement.textContent = `Поточне значення: ${data}`;
+                
+                if (data === 1) {
+                    statusElement.style.color = '#e67e22'; 
+                } else if (data === 0) {
+                    statusElement.style.color = '#3498db'; 
+                } else {
+                    statusElement.style.color = '#7f8c8d';
+                }
+            });
+        }
+    </script>
 </body>
 </html>
